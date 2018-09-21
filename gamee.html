@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+  *{margin:0;padding: 0;}
+  body{text-align: center;background-color: #000}
+  canvas{margin:0 auto; background: url(./img/game_bg_2_hd.jpg)}
+  </style>
+</head>
+<body>
+  <canvas id="c1" width="800" height="600"></canvas>
+  <!-- common.js -->
+  <script>
+    function d2a(n) {
+      return n*Math.PI/180
+    }
+    function a2d(n) {
+      return n*180/Math.PI
+    }
+    function rnd(a,b) {
+      return Math.floor(Math.random()*(b-a)+a)
+    }
+    var JSON={}
+    // 加载图片
+    function loadImg(resource,progress,success) {
+      var count =0;
+      for(var i=0;i<resource.length;i++){
+        var oImg =new Image();
+        (function (index) {
+          oImg.onload=function(){
+            count++;
+            progress && progress(count,resource.length)
+            if (count==resource.length) {
+              success && success(JSON)
+              console.log(JSON);
+              
+            }
+            JSON[resource[index]]=this
+          }
+        })(i);
+        oImg.src ='./img/'+resource[i]+'.png'
+      }        
+    }
+  </script>
+   <!-- fish.js -->
+   <script>
+     class Fish{
+       constructor(type){
+         this.type=type||1;
+         this.x =0;
+         this.y=0;
+         this.rotate =0;
+         this.speed =1;
+         this.cur =0;
+         this.move()
+       }
+       move(){
+         setInterval(()=>{
+           this.cur++;
+           if (this.cur ==4) {
+             this.cur =0
+           }
+         },250)
+         setInterval(()=>{
+           this.x+=Math.cos(d2a(this.rotate))*this.speed;
+           this.y+=Math.sin(d2a(this.rotate))*this.speed;
+         },16)
+       }
+       draw(gd){
+          let w=Fish.FISH_SIZE[this.type].w
+          let h=Fish.FISH_SIZE[this.type].h;
+          gd.save();
+          gd.translate(this.x,this.y);
+          gd.rotate(d2a(this.rotate))
+          if (this.rotate>90&&this.rotate<270) {
+            gd.scale(1,-1)
+          }
+          gd.drawImage(
+            JSON['fish'+this.type],
+            0,this.cur*h,w,h,
+            -w/2,-h/2,w,h
+          );
+          gd.restore()
+       }
+       isIN(x,y){
+         var a=this.x-x;
+         var b=this.y-y;
+         var c=Math.sqrt(a*a+b*b)
+         if (c<FISH_SIZE[this.type].collR) {
+           return true;
+         }else{
+           return false;
+         }
+       }
+       
+     }
+       Fish.FISH_SIZE=[
+    null,
+    {w: 55, h: 37, collR: 17},
+    {w: 78, h: 64, collR: 24},
+    {w: 72, h: 56, collR: 20},
+    {w: 77, h: 59, collR: 22},
+    {w: 107, h: 122, collR: 29}
+  ]
+   </script>
+   <!-- cannon.js 炮筒 -->
+   <script>
+     class Cannon{
+       constructor(type){
+         this.type =type||1;
+         this.rotate=0;
+         this.cur=0;
+         this.CANNON_SIZE=[
+        null,
+        {w: 74, h: 74},
+        {w: 74, h: 76},
+        {w: 74, h: 76},
+        {w: 74, h: 83},
+        {w: 74, h: 85},
+        {w: 74, h: 90},
+        {w: 74, h: 94}
+      ]
+        this.x=431,
+        this.y=570
+       }
+       draw(gd){
+         let w=this.CANNON_SIZE[this.type].w
+         let h=this.CANNON_SIZE[this.type].h;
+         gd.save();
+          gd.translate(this.x,this.y);
+          gd.rotate(d2a(this.rotate));
+
+          gd.drawImage(
+        JSON['cannon'+this.type],
+        0,this.cur*h,w, h,
+        -w/2,-h/2,w, h,
+      );
+      gd.restore();
+       }
+       emit(){
+         var timer =setInterval(()=>{
+           this.cur++;
+           if (this.cur==5) {
+             clearInterval(timer)
+             this.cur=0;
+           }
+         },30)
+       }
+     }
+   </script>
+   <!-- bullet.js 炮筒 -->
+   <script>
+   class Bullet{
+     constructor(type){
+        this.type=type||1;
+        this.rotate=0;
+        this.x = 0;
+        this.y=0;
+        this.timer=null;
+        this.speed=10;
+      this.BULLET_SIZE=[
+        null,
+        {x: 86, y: 0, w: 24, h: 26},
+        {x: 62, y: 0, w: 25, h: 29},
+        {x: 30, y: 0, w: 31, h: 35},
+        {x: 32, y: 35, w: 27, h: 31},
+        {x: 30, y: 82, w: 29, h: 33},
+        {x: 0, y: 82, w: 30, h: 34},
+        {x: 0, y: 0, w: 30, h: 44}
+      ];
+     this.move();
+     }
+      draw(gd){
+      let w=this.BULLET_SIZE[this.type].w;
+      let h=this.BULLET_SIZE[this.type].h;
+      let x=this.BULLET_SIZE[this.type].x;
+      let y=this.BULLET_SIZE[this.type].y;
+
+      gd.save();
+      gd.translate(this.x,this.y);
+      gd.rotate(d2a(this.rotate));
+
+      gd.drawImage(
+        JSON['bullet'],
+        x,y,w, h,
+        -w/2,-h/2,w, h,
+      );
+      gd.restore();
+    }
+        move(){
+      this.timer = setInterval(()=>{
+        this.x+=Math.sin(d2a(this.rotate))*this.speed;
+        this.y-=Math.cos(d2a(this.rotate))*this.speed;
+      },30);
+    }
+    clear(){
+      clearInterval(this.timer);
+    }
+   }
+   </script>
+  <!-- 业务 -->
+   <script>
+   var oC =document.getElementById('c1')
+   var gd =oC.getContext('2d')
+  //  1.请求数据
+  var data=[
+    'fish1','fish2','fish3','fish4','fish5',  
+    'cannon1','cannon2','cannon3','cannon4','cannon5','cannon6','cannon7',
+    'coinAni1','coinAni2','bottom','bullet','web'
+  ];
+  // 加载资源
+  loadImg(data,(loaded,total)=>{
+    // console.log(loaded/total*100+"%");
+    
+  },()=>{
+  init();
+  })
+  function init() {
+ var b=new Cannon(7);
+    
+//  var a = new Fish(5)
+//  a.x =400;
+//  a.y =200;
+//  b.rotate =90;
+//  a.rotate=91;
+   let arrBullet=[];
+   let arrFish =[];
+   let out =50;
+   let rules =0.02;
+ setInterval(()=>{
+  gd.clearRect(0,0,oC.width,oC.height);
+  if (Math.random()<rules) {
+    let f=new Fish(rnd(1,6))
+    if (Math.random()<0.5) {
+      f.rotate=rnd(-45,45)
+      f.x=-out
+    }else{
+      f.rotate=rnd(135,225)
+      f.x=oC.width+out;
+    }
+    f.y=rnd(100,oC.height-100)
+    arrFish.push(f)
+  } 
+  arrFish.map((item,index)=>{
+    item.draw(gd)
+  })
+  
+  // a.draw(gd)
+  gd.drawImage(
+    JSON['bottom'],
+    0,0,765,70,
+    0,532,765,70
+  );
+  // b.draw(gd)
+  arrBullet.forEach((item,index)=>{
+    if (item.x<-out||item.x>oC.width+out||item.y<-out||item.y>oC.height+out) {
+      arrBullet.splice(index,1)
+      item.clear()
+    }else{
+      item.draw(gd)
+    }
+  })
+  b.draw(gd)
+ },30)
+  oC.onclick=function(ev){
+    var x=ev.clientX-oC.offsetLeft-b.x;
+    var y=b.y-(ev.clientY+oC.offsetTop)
+    
+    var d=90-a2d(Math.atan2(y,x))
+    b.rotate=d;
+    b.emit();
+    let bullet =new Bullet(b.type)
+    bullet.x=b.x;
+    bullet.y=b.y;
+    bullet.rotate=b.rotate;
+    arrBullet.push(bullet)
+  }
+  }
+   </script>
+</body>
+
+</html>
